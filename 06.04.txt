@@ -267,7 +267,7 @@ void blink1() {
     time_1 = millis();  
     
   }  
-  if (digitalRead(2) == 0)  //первый датчик
+  if (digitalRead(2) == 0)  //второй датчик
   {
     time_2 = millis();    
     delta_time = time_2 - time_1;
