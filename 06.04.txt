@@ -262,24 +262,27 @@ void blink0() {
 void blink1() {
 
   
-  if (digitalRead(3) == 0) //второй датчик
-    {
-      time_1 = millis();    
-      if (digitalRead(2) == 0) {
-        time_2 = millis();    
-        delta_time = time_2 - time_1;
+  if (digitalRead(3) == 0)  //первый датчик
+  {
+    time_1 = millis();  
+    
+  }  
+  if (digitalRead(2) == 0)  //первый датчик
+  {
+    time_2 = millis();    
+    delta_time = time_2 - time_1;
 
-        float v1 = (sensors_distance + g*pow(delta_time, 2)/2)/delta_time;    //Скорость в точке нижнего датчика
-        float calc_delay = (pow(pow(v1, 2) + 2*g*y_1, 0.5) - v1)/g - t_350;
+    float v1 = (sensors_distance + g*pow(delta_time, 2)/2)/delta_time;    //Скорость в точке нижнего датчика
+    float calc_delay = (pow(pow(v1, 2) + 2*g*y_1, 0.5) - v1)/g - t_350;
 
-        //Возможные значения sensors_distance лежат в диапазоне до 7 см (необходима более точная оценка)
-        digitalWrite(9, LOW);
-        delay(calc_delay);
-        digitalWrite(8, LOW);
-        delay(1000);
-        digitalWrite(9, HIGH);
-        digitalWrite(8, HIGH);
-      }
-    }
+    //Возможные значения sensors_distance лежат в диапазоне до 7 см (необходима более точная оценка)
+    digitalWrite(9, LOW);
+    delay(calc_delay);
+    digitalWrite(8, LOW);
+    delay(1000);
+    digitalWrite(9, HIGH);
+    digitalWrite(8, HIGH);
+  }
+
 
 }
