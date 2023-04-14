@@ -1,0 +1,312 @@
+//#include "Adafruit_LiquidCrystal.h"  // Для использования скетча в UnoArdusim, и для загрузки в Arduino
+#include <LiquidCrystal_I2C.h>         // Для загрузки скетча в Arduino
+
+//Adafruit_LiquidCrystal lcd(0x20);    // Для использования скетча в UnoArdusim, и для загрузки в Arduino
+LiquidCrystal_I2C lcd(0x27,16,2);    // Для загрузки скетча в Arduino
+
+const int button_OK = 14;    //A0
+const int button_EXIT = 15;  //A1
+const int button_UP = 16;    //A2
+const int button_DOWN = 17;  //A3
+const int lazer_0 = 2;       //D2
+const int lazer_1 = 3;       //D3
+float time_1 = 0;    //Счетчик времени после прохождения первого лазера
+float time_2 = 0;    //Счетчик времени после прохождения второго лазера
+float delta_time = 0;
+const float y_1 = 0.7;       //Высота расположения первого датчика;
+const float g = 9.80665; 
+const float t_350 = 0.350;   //Время задержки фотоаппарата 
+int q = 0;
+
+
+// Хранение состояния кнопок
+int buttonState_OK = 0;  
+int buttonState_EXIT = 0;
+int buttonState_UP = 0;
+int buttonState_DOWN = 0;
+
+// i- вход в меню, j-выбор интересющего блока меню, k-доступ настройк  блоков
+int i = 0, j = 0, k = 0;
+String onoff_0 = "ON", onoff_1 = "OFF", onoff_2, onoff_3, onoff_4, onoff_x;
+
+
+// зранение состояния входов
+int StateMode0 = 1;
+int StateMode1 = 0;
+
+
+// задержка и расстояние между датчиками
+int sensor_delay = 0;
+int sensors_distance = 3;
+
+unsigned long previousMillis = 0;
+const long interval = 1000;
+
+void setup() {
+  //lcd.begin(16, 2);            // Для использования скетча в UnoArdusim, и для загрузки в Arduino
+  lcd.init();                    // Для загрузки скетча в Arduino
+  lcd.setBacklight(HIGH);
+  pinMode(button_OK, INPUT_PULLUP);
+  pinMode(button_EXIT, INPUT_PULLUP);
+  pinMode(button_UP, INPUT_PULLUP);
+  pinMode(button_DOWN, INPUT_PULLUP);
+  pinMode(lazer_0, INPUT);
+  pinMode(lazer_1, INPUT);
+  Serial.begin(9600);
+
+
+
+  pinMode(3, INPUT);
+  pinMode(2, INPUT);
+  pinMode(9, OUTPUT);
+  pinMode(8, OUTPUT);
+  digitalWrite(9, HIGH);
+  digitalWrite(8, HIGH);
+}
+
+void blink0();
+void blink1();
+void choise();
+
+void loop() {
+
+  lcd.setCursor(0, 0);
+  lcd.print("Mode 0");
+  lcd.setCursor(0, 1);
+  lcd.print("Mode 1");
+
+  lcd.setCursor(8, 0);
+  lcd.print(onoff_0);
+  lcd.setCursor(8, 1);
+  lcd.print(onoff_1);
+
+  lcd.setCursor(12, 0);
+  lcd.print(sensor_delay);
+  lcd.setCursor(12, 1);
+  lcd.print(sensors_distance);
+
+  buttonState_OK = digitalRead(button_OK);
+  if (buttonState_OK == 0) {
+    delay(300); i = 1; lcd.clear();
+    while (i > 0) {
+
+      if (StateMode0 == 0) {
+        onoff_0 = "OFF";
+      } else {
+        onoff_0 = "ON";
+      }
+      if (StateMode1 == 0) {
+        onoff_1 = "OFF";
+      } else {
+        onoff_1 = "ON";
+      }
+
+      lcd.setCursor(6, 0);
+      lcd.print("Menu:");
+      lcd.setCursor(0, 1);
+      lcd.print("Mode");
+      lcd.setCursor(5, 1);
+      lcd.print(j);
+      lcd.setCursor(8, 1);
+      if(j == 0){ lcd.print(onoff_0);
+      } else {  lcd.print(onoff_1);}
+
+      buttonState_OK = digitalRead(button_OK);
+      if (buttonState_OK == LOW) {
+        delay(300);
+        k++;
+        if (k > 1) {
+          k = 0;
+        } lcd.clear();
+      }
+      buttonState_EXIT = digitalRead(button_EXIT);
+      if (buttonState_EXIT == LOW) {
+        i = 0;
+        lcd.clear();
+      }
+      buttonState_UP = digitalRead(button_UP);
+      if (buttonState_UP == LOW) {
+        j--;
+        delay(300);
+        if (j < 0) {
+          j = 1;
+        } lcd.clear();
+      }
+      buttonState_DOWN = digitalRead(button_DOWN);
+      if (buttonState_DOWN == LOW) {
+        j++;
+        delay(300);
+        if (j > 1) {
+          j = 0;
+        } lcd.clear();
+      }
+      if (j == 0) {
+        while (k == 1) {
+          lcd.setCursor(6, 0);
+          lcd.print("Edit:");
+          lcd.setCursor(1, 1);
+          lcd.print("Delay");
+          lcd.setCursor(8, 1);
+          lcd.print(sensor_delay);
+
+          if (StateMode0 == 0) {
+            onoff_0 = "OFF";
+          } else {
+            onoff_0 = "ON ";
+          }
+          buttonState_OK = digitalRead(button_OK);
+          if (buttonState_OK == LOW) {
+            StateMode0 = 1;
+            StateMode1 = 0;
+            k = 0;
+            delay(300);
+            lcd.clear();
+          }
+          buttonState_EXIT = digitalRead(button_EXIT);
+          if (buttonState_EXIT == LOW) {
+            k = 0;
+            delay(300);
+            lcd.clear();
+          }
+          buttonState_UP = digitalRead(button_UP);
+          if (buttonState_UP == LOW) {
+            delay(300);
+            sensor_delay+=2;
+            if (sensor_delay >= 300) {
+              sensor_delay = 0;
+            }lcd.clear();
+          }
+          buttonState_DOWN = digitalRead(button_DOWN);
+          if (buttonState_DOWN == LOW) {
+            delay(300);
+            sensor_delay-=2;
+            if (sensor_delay <= 0) {
+              sensor_delay = 300;
+            }lcd.clear();
+          }
+
+        }
+      }
+      if (j == 1) {
+        while (k == 1) {
+          lcd.setCursor(6, 0);
+          lcd.print("Edit:");
+          lcd.setCursor(1, 1);
+          lcd.print("Distance");
+          lcd.setCursor(11, 1);
+          lcd.print(sensors_distance);
+          if (StateMode1 == 0) {
+            onoff_1 = "OFF";
+          } else {
+            onoff_1 = "ON ";
+          }
+          buttonState_OK = digitalRead(button_OK);
+          if (buttonState_OK == LOW) {
+            StateMode0 = 0;
+            StateMode1 = 1;
+            k = 0;
+            delay(300);
+            lcd.clear();
+          }
+          buttonState_EXIT = digitalRead(button_EXIT);
+          if (buttonState_EXIT == LOW) {
+            k = 0;
+            delay(300);
+            lcd.clear();
+          }
+          buttonState_UP = digitalRead(button_UP);
+          if (buttonState_UP == LOW) {
+            delay(300);
+            sensors_distance++;
+            if (sensors_distance >= 50) {
+              sensors_distance = 0;
+            }lcd.clear();
+          }
+          buttonState_DOWN = digitalRead(button_DOWN);
+          if (buttonState_DOWN == LOW) {
+            delay(300);
+            sensors_distance--;
+            if (sensors_distance <= 0) {
+              sensors_distance = 50;
+            }lcd.clear();
+          } 
+        }   
+      }  choise();  // Лазер работает на 2 уровне меню
+    }  
+  }   choise(); //только главное меню
+   
+}
+
+
+void choise(){
+  if(StateMode0 == 1) blink0();
+  else blink1();
+}
+
+void blink0() {
+//  if( digitalRead(lazer_0) == HIGH )
+//  {
+//    Serial.print('1');
+//    delay(sensor_delay);
+//  }
+
+ if (digitalRead(3) == 0) //первый датчик
+  {
+    digitalWrite(9, LOW);
+    delay(sensor_delay);
+    digitalWrite(8, LOW);
+    delay(1000);
+    digitalWrite(9, HIGH);
+    digitalWrite(8, HIGH);
+  }
+}
+void blink1() {
+  if (digitalRead(3) == 0)  //первый датчик
+  {
+    time_1 = millis();  
+    q=1;
+  }  
+  if (digitalRead(2) == 0)  //второй датчик
+  {
+    time_2 = millis();    
+    delta_time = float((time_2 - time_1))/1000.;
+
+    float v1 = (sensors_distance/100. + g*pow(delta_time, 2.)/2.)/delta_time;    //Скорость в точке нижнего датчика
+    float calc_delay = 1000*(pow((pow(v1, 2.) + 2.*g*y_1), 0.5) - v1)/g;
+
+    if(calc_delay<0.){
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print(calc_delay);
+      lcd.setCursor(6, 0);
+      lcd.print(v1);
+      lcd.setCursor(0, 1);
+      lcd.print(delta_time);
+      delay(10000);
+      lcd.clear();
+      }
+    else{
+      //Возможные значения sensors_distance лежат в диапазоне до 7 см (необходима более точная оценка)
+            
+      digitalWrite(9, LOW);
+      delay(calc_delay);
+      digitalWrite(8, LOW);
+      delay(1000);
+      digitalWrite(9, HIGH);
+      digitalWrite(8, HIGH);
+      
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print(calc_delay);
+      lcd.setCursor(8, 0);
+      lcd.print(v1);
+      lcd.setCursor(0, 1);
+      lcd.print(delta_time);
+      delay(3000);
+      lcd.clear();
+    }
+    q = 0;
+  }
+
+
+}
